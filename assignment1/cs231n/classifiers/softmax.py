@@ -71,7 +71,30 @@ def softmax_loss_vectorized(W, X, y, reg):
   # regularization!                                                           #
   #############################################################################
   pass
+  num_train = X.shape[0]
+  num_class = W.shape[1]
   
+  score = np.matmul(X, W)
+  # https://stackoverflow.com/questions/26333005/numpy-subtract-every-row-of-matrix-by-vector
+  score = score.T
+  score -= np.amax(score, axis=0)  
+  score = score.T
+  #
+  
+  correct_class_score = score[np.arange(X.shape[0]), y]
+  Prob_c = np.exp(correct_class_score)/np.sum(np.exp(score), axis=1)
+  loss = np.sum(-np.log(Prob_c))
+  Prob = np.exp(score).T/np.sum(np.exp(score), axis=1)
+  Prob = Prob.T
+  binary = np.zeros(Prob.shape)
+  binary[np.arange(X.shape[0]), y] = 1
+  Prob -= binary
+  dW = np.matmul(X.T, Prob)    
+         
+  loss /= num_train
+  loss += reg*np.sum(W*W)
+  dW /= num_train
+  dW += 2*reg*W
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################
