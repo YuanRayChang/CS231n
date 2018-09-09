@@ -143,6 +143,7 @@ class TwoLayerNet(object):
     grads['b2'] = db2
     grads['W1'] = dW1
     grads['b1'] = db1
+    
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
@@ -187,6 +188,9 @@ class TwoLayerNet(object):
       # them in X_batch and y_batch respectively.                             #
       #########################################################################
       pass
+      indices = np.random.choice(num_train, batch_size, replace=True)
+      X_batch = np.take(X, indices, 0)
+      y_batch = np.take(y, indices)
       #########################################################################
       #                             END OF YOUR CODE                          #
       #########################################################################
@@ -202,6 +206,10 @@ class TwoLayerNet(object):
       # stored in the grads dictionary defined above.                         #
       #########################################################################
       pass
+      self.params['W1'] -= grads['W1']*learning_rate
+      self.params['b1'] -= grads['b1']*learning_rate
+      self.params['W2'] -= grads['W2']*learning_rate
+      self.params['b2'] -= grads['b2']*learning_rate
       #########################################################################
       #                             END OF YOUR CODE                          #
       #########################################################################
@@ -247,6 +255,9 @@ class TwoLayerNet(object):
     # TODO: Implement this function; it should be VERY simple!                #
     ###########################################################################
     pass
+    layer1 = np.maximum(0, np.dot(X, self.params['W1']) + self.params['b1'])
+    scores = np.dot(layer1, self.params['W2'])+ self.params['b2']
+    y_pred = np.argmax(scores, 1)
     ###########################################################################
     #                              END OF YOUR CODE                           #
     ###########################################################################
