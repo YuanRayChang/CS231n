@@ -117,7 +117,32 @@ class TwoLayerNet(object):
     # grads['W1'] should store the gradient on W1, and be a matrix of same size #
     #############################################################################
     pass
-    dW1 = 
+    # https://stackoverflow.com/questions/39441517/in-numpy-sum-there-is-parameter-called-keepdims-what-does-it-do
+    Probs = np.exp(scores) / np.sum(np.exp(scores), axis=1, keepdims=True)
+    binary = Probs
+    binary[np.arange(N), y] -= 1
+    
+    dW2 = np.dot(layer1.T, binary)
+    dW2 /= N
+    dW2 += 2*reg*W2
+    db2 = np.sum(binary, axis=0)
+    db2 /= N
+    
+    dlayer1 = np.dot(binary, W2.T)
+    # (Importamt!) Because of ReLU activation, some value shloud be 0.
+    dlayer1[layer1==0] = 0
+    
+    dW1 = np.dot(X.T, dlayer1)
+    dW1 /= N
+    dW1 += 2*reg*W1
+    db1 = np.sum(dlayer1, axis=0)
+    db1 /= N
+    
+    
+    grads['W2'] = dW2
+    grads['b2'] = db2
+    grads['W1'] = dW1
+    grads['b1'] = db1
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
