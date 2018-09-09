@@ -81,15 +81,21 @@ def softmax_loss_vectorized(W, X, y, reg):
   score = score.T
   #
   
-  correct_class_score = score[np.arange(X.shape[0]), y]
+  correct_class_score = score[np.arange(num_train), y]
   Prob_c = np.exp(correct_class_score)/np.sum(np.exp(score), axis=1)
   loss = np.sum(-np.log(Prob_c))
+    
+  # for dW  
   Prob = np.exp(score).T/np.sum(np.exp(score), axis=1)
   Prob = Prob.T
-  binary = np.zeros(Prob.shape)
-  binary[np.arange(X.shape[0]), y] = 1
-  Prob -= binary
-  dW = np.matmul(X.T, Prob)    
+
+  #binary = np.zeros(Prob.shape)
+  #binary[np.arange(num_train), y] = 1
+  #Prob -= binary
+  binary = Prob
+  binary[np.arange(num_train), y] -= 1
+
+  dW = np.matmul(X.T, binary)    
          
   loss /= num_train
   loss += reg*np.sum(W*W)
