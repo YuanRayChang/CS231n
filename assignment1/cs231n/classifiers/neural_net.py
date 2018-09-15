@@ -103,8 +103,9 @@ class TwoLayerNet(object):
     Prob = np.exp(correct_class_score) / np.sum(np.exp(scores), axis=1)
     loss = np.sum(-np.log(Prob))
     loss /= N
-    loss += reg * (np.sum(W1*W1) + np.sum(W2*W2) + np.sum(b1*b1) +np.sum(b2*b2))
-    
+    #loss += reg * (np.sum(W1*W1) + np.sum(W2*W2) + np.sum(b1*b1) +np.sum(b2*b2))
+    loss += reg * (np.sum(W1*W1) + np.sum(W2*W2)) # I think the bias shouldn't be included
+
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
