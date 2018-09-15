@@ -48,6 +48,10 @@ class TwoLayerNet(object):
         # weights and biases using the keys 'W2' and 'b2'.                         #
         ############################################################################
         pass
+        self.params['W1'] = np.random.normal(loc=0, scale= weight_scale, size=(input_dim, hidden_dim))
+        self.params['b1'] = np.zeros(hidden_dim)
+        self.params['W2'] = np.random.normal(loc=0, scale= weight_scale, size=(hidden_dim, num_classes))
+        self.params['b2'] = np.zeros(num_classes)
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -78,6 +82,15 @@ class TwoLayerNet(object):
         # class scores for X and storing them in the scores variable.              #
         ############################################################################
         pass
+        # Unpack variables from the params dictionary
+        W1, b1 = self.params['W1'], self.params['b1']
+        W2, b2 = self.params['W2'], self.params['b2']
+        reg = self.reg
+        N = X.shape[0]
+        X = X.reshape(N, -1)
+        layer1 = np.maximum(0, X.dot(W1) + b1) #ReLu
+        scores = layer1.dot(W2) + b2
+        
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -98,6 +111,39 @@ class TwoLayerNet(object):
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
         pass
+        scores -= np.amax(scores, axis=1, keepdims=True)
+        correct_class_score = scores[np.arange(N), y]
+        Prob = np.exp(correct_class_score) / np.sum(np.exp(scores), axis=1)
+        loss = np.sum(-np.log(Prob))
+        loss /= N
+        loss += 0.5 * reg * (np.sum(W1*W1) + np.sum(W2*W2))
+        
+        # https://stackoverflow.com/questions/39441517/in-numpy-sum-there-is-parameter-called-keepdims-what-does-it-do
+        Probs = np.exp(scores) / np.sum(np.exp(scores), axis=1, keepdims=True)
+        binary = Probs
+        binary[np.arange(N), y] -= 1
+
+        dW2 = np.dot(layer1.T, binary)
+        dW2 /= N
+        dW2 += reg*W2
+        db2 = np.sum(binary, axis=0)
+        db2 /= N
+
+        dlayer1 = np.dot(binary, W2.T)
+        # (Importamt!) Because of ReLU activation, some value shloud be 0.
+        dlayer1[layer1==0] = 0
+
+        dW1 = np.dot(X.T, dlayer1)
+        dW1 /= N
+        dW1 += reg*W1
+        db1 = np.sum(dlayer1, axis=0)
+        db1 /= N
+
+
+        grads['W2'] = dW2
+        grads['b2'] = db2
+        grads['W1'] = dW1
+        grads['b1'] = db1
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
