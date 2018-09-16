@@ -88,8 +88,10 @@ class TwoLayerNet(object):
         reg = self.reg
         N = X.shape[0]
         X = X.reshape(N, -1)
-        layer1 = np.maximum(0, X.dot(W1) + b1) #ReLu
-        scores = layer1.dot(W2) + b2
+        
+        scores, cache1 = affine_relu_forward(X, W1, b1)
+        scores, cache2 = affine_forward(scores, W2, b2)
+        
         
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -111,39 +113,13 @@ class TwoLayerNet(object):
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
         pass
-        scores -= np.amax(scores, axis=1, keepdims=True)
-        correct_class_score = scores[np.arange(N), y]
-        Prob = np.exp(correct_class_score) / np.sum(np.exp(scores), axis=1)
-        loss = np.sum(-np.log(Prob))
-        loss /= N
-        loss += 0.5 * reg * (np.sum(W1*W1) + np.sum(W2*W2))
+        loss, dscores = softmax_loss(scores, y)
+        dhidden, grads['W2'], grads['b2'] = affine_backward(dscores, cache2)
+        dx1, grads['W1'], grads['b1'] = affine_relu_backward(dhidden, cache1)
+        loss += 0.5*reg*(np.sum(W1*W1)+np.sum(W2*W2))
+        grads['W2'] += reg*W2
+        grads['W1'] += reg*W1
         
-        # https://stackoverflow.com/questions/39441517/in-numpy-sum-there-is-parameter-called-keepdims-what-does-it-do
-        Probs = np.exp(scores) / np.sum(np.exp(scores), axis=1, keepdims=True)
-        binary = Probs
-        binary[np.arange(N), y] -= 1
-
-        dW2 = np.dot(layer1.T, binary)
-        dW2 /= N
-        dW2 += reg*W2
-        db2 = np.sum(binary, axis=0)
-        db2 /= N
-
-        dlayer1 = np.dot(binary, W2.T)
-        # (Importamt!) Because of ReLU activation, some value shloud be 0.
-        dlayer1[layer1==0] = 0
-
-        dW1 = np.dot(X.T, dlayer1)
-        dW1 /= N
-        dW1 += reg*W1
-        db1 = np.sum(dlayer1, axis=0)
-        db1 /= N
-
-
-        grads['W2'] = dW2
-        grads['b2'] = db2
-        grads['W1'] = dW1
-        grads['b1'] = db1
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -211,6 +187,13 @@ class FullyConnectedNet(object):
         # parameters should be initialized to zeros.                               #
         ############################################################################
         pass
+        dim = [input_dim] + hidden_dims +[num_classes]
+        for i in range(self.num_layers):
+            w = 'W' + str(i+1)
+            b = 'b' + str(i+1)
+            self.params[w] = np.random.normal(loc=0, scale= weight_scale, size=(dim[i], dim[i+1]))
+            self.params[b] = np.zeros(dim[i+1])
+
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -270,6 +253,17 @@ class FullyConnectedNet(object):
         # layer, etc.                                                              #
         ############################################################################
         pass
+        cache = [None]*self.num_layers
+        for i in range(self.num_layers):
+            w = 'W' + str(i+1)
+            b = 'b' + str(i+1)
+            if i == 0:
+                scores, cache[i] = affine_relu_forward(X, self.params[w],self.params[b])
+            elif i == (self.num_layers - 1) :
+                scores, cache[i] = affine_forward(scores, self.params[w],self.params[b])
+            else:
+                scores, cache[i] = affine_relu_forward(scores, self.params[w],self.params[b])
+                
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -293,6 +287,21 @@ class FullyConnectedNet(object):
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
         pass
+        loss, dscores = softmax_loss(scores, y)
+        
+        dx, dw, db = affine_backward(dscores, cache[self.num_layers-1])
+        w_n = 'W' + str(self.num_layers)
+        b_n = 'b' +str(self.num_layers)
+        grads[w_n] = dw + self.reg * cache[self.num_layers-1][1]
+        grads[b_n] = db + self.reg * cache[self.num_layers-1][2]
+        loss += 0.5 * self.reg * np.sum(cache[self.num_layers-1][1] **2)
+        for i in range(self.num_layers-2, -1, -1):
+            dx, dw, db = affine_relu_backward(dx, cache[i])
+            w_n = 'W' + str(i+1)
+            b_n = 'b' +str(i+1)
+            grads[w_n] = dw + self.reg * cache[i][0][1]
+            grads[b_n] = db + self.reg * cache[i][0][2]
+            loss += 0.5 * self.reg * np.sum(cache[i][0][1] **2)
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
