@@ -193,6 +193,18 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         
         running_mean = momentum*running_mean + (1-momentum)*sample_mean
         running_var = momentum*running_var + (1-momentum)*sample_var
+               
+        # cache
+        
+        #xhat = x_normed 
+        #gamma = gamma
+        ivarsqrt = 1/np.sqrt(sample_var + eps)
+        xmu = x - sample_mean
+        varsqrt = np.sqrt(sample_var + eps)
+        #var = sample_var
+        #eps = eps
+        
+        cache = (x_normed, gamma, ivarsqrt, xmu, varsqrt, sample_var, eps)
         #######################################################################
         #                           END OF YOUR CODE                          #
         #######################################################################
@@ -209,7 +221,6 @@ def batchnorm_forward(x, gamma, beta, bn_param):
 
         x_normed = (x - running_mean)/np.sqrt(running_var + eps)
         out = x_normed*gamma + beta
-        
         
         #######################################################################
         #                          END OF YOUR CODE                           #
@@ -249,6 +260,22 @@ def batchnorm_backward(dout, cache):
     # might prove to be helpful.                                              #
     ###########################################################################
     pass
+    N, D = dout.shape
+    xhat, gamma, ivarsqrt, xmu, varsqrt, var, eps = cache
+                
+    dgammax = dout
+    dbeta = np.sum(dout, axis=0)
+    dgamma = np.sum(dgammax*xhat, axis=0)
+    dxhat = dgammax*gamma
+    dxmu = dxhat*ivarsqrt
+    divarsqrt = np.sum(dxhat*xmu, axis=0)
+    dvarsqrt = divarsqrt*-1/(varsqrt**2)
+    dvar = dvarsqrt*0.5/np.sqrt(var+eps)
+    dxmusq = dvar/N*np.ones((N, D))
+    dxmu += dxmusq*2*xmu
+    dmu = -1*np.sum(dxmu, axis=0)
+    dx = dxmu
+    dx += dmu/N*np.ones((N, D))
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
