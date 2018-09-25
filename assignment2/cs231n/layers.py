@@ -356,6 +356,22 @@ def layernorm_forward(x, gamma, beta, ln_param):
     # the batch norm code and leave it almost unchanged?                      #
     ###########################################################################
     pass
+    sample_mean = np.mean(x, axis=1, keepdims=True)
+    sample_var = np.var(x, axis=1, keepdims=True)
+    x_normed = (x - sample_mean)/np.sqrt(sample_var + eps)
+    out = x_normed*gamma + beta
+    
+    # cache
+
+    #xhat = x_normed 
+    #gamma = gamma
+    ivarsqrt = 1/np.sqrt(sample_var + eps)
+    xmu = x - sample_mean
+    varsqrt = np.sqrt(sample_var + eps)
+    #var = sample_var
+    #eps = eps
+
+    cache = (x_normed, gamma, ivarsqrt, xmu, varsqrt, sample_var, eps)
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -387,6 +403,22 @@ def layernorm_backward(dout, cache):
     # still apply!                                                            #
     ###########################################################################
     pass
+    N, D = dout.shape
+    xhat, gamma, ivarsqrt, xmu, varsqrt, var, eps = cache
+                
+    dgammax = dout
+    dbeta = np.sum(dout, axis=0)
+    dgamma = np.sum(dgammax*xhat, axis=0)
+    dxhat = dgammax*gamma
+    dxmu = dxhat*ivarsqrt
+    divarsqrt = np.sum(dxhat*xmu, axis=1, keepdims=True)
+    dvarsqrt = divarsqrt*-1/(varsqrt**2)
+    dvar = dvarsqrt*0.5/np.sqrt(var+eps)
+    dxmusq = dvar/D*np.ones((N, D))
+    dxmu += dxmusq*2*xmu
+    dmu = -1*np.sum(dxmu, axis=1, keepdims=True)
+    dx = dxmu
+    dx += dmu/D*np.ones((N, D))
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
