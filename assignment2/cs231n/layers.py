@@ -545,6 +545,21 @@ def conv_forward_naive(x, w, b, conv_param):
     # Hint: you can use the function np.pad for padding.                      #
     ###########################################################################
     pass
+    N, C, H, W = x.shape
+    F, C, HH, WW = w.shape
+    pad = conv_param['pad']
+    stride = conv_param['stride']
+    x_pad = np.pad(x, ((0, 0), (0, 0), (pad, pad), (pad, pad)), 'constant')     
+    
+    H_ = int(1 + (H + 2 * pad - HH) / stride)
+    W_ = int(1 + (W + 2 * pad - WW) / stride)
+    out = np.zeros((N, F, H_, W_)) #https://stackoverflow.com/questions/29042182/creating-a-4d-matrix-full-of-zeros-in-python-numpy
+
+    for n in range(N):
+        for f in range(F):
+            for h_ in range(H_):
+                for w_ in range(W_):
+                    out[n,f,h_,w_] = np.sum(x_pad[n,:,h_*stride:(HH+h_*stride),w_*stride:(WW+w_*stride)]*w[f,:,:,:]) + b[f]
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -570,6 +585,28 @@ def conv_backward_naive(dout, cache):
     # TODO: Implement the convolutional backward pass.                        #
     ###########################################################################
     pass
+    x, w, b, conv_param = cache
+    N, C, H, W = x.shape
+    F, C, HH, WW = w.shape
+    pad = conv_param['pad']
+    stride = conv_param['stride']
+    x_pad = np.pad(x, ((0, 0), (0, 0), (pad, pad), (pad, pad)), 'constant')     
+    
+    H_ = dout.shape[2]
+    W_ = dout.shape[3]
+    dx_pad = np.zeros(x_pad.shape)
+    dw = np.zeros(w.shape)
+    db = np.zeros(b.shape)
+
+    for n in range(N):
+        for f in range(F):
+            for h_ in range(H_):
+                for w_ in range(W_):
+                      dx_pad[n, :, h_*stride:(h_*stride+HH), w_*stride:(w_*stride+WW)] += w[f, :, :, :] * dout[n,f,h_,w_]
+                      dw[f, :, :, :] += x_pad[n, :, h_*stride:(h_*stride+HH), w_*stride:(w_*stride+WW)] * dout[n,f,h_,w_]
+    
+    dx = dx_pad[:,:,pad:-pad,pad:-pad]
+    db = np.sum(dout, axis=(0, 2, 3))
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
