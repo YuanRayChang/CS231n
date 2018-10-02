@@ -767,6 +767,11 @@ def spatial_batchnorm_backward(dout, cache):
     # Your implementation should be very short; ours is less than five lines. #
     ###########################################################################
     pass
+    N, C, H, W = dout.shape
+    dout = np.swapaxes(dout,0,1)
+    dx, dgamma, dbeta = batchnorm_backward(dout.reshape(C,N*H*W).T, cache)
+    dx = (dx.T).reshape(C, N, H, W)
+    dx = np.swapaxes(dx, 0, 1)
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -803,6 +808,31 @@ def spatial_groupnorm_forward(x, gamma, beta, G, gn_param):
     # and layer normalization!                                                # 
     ###########################################################################
     pass
+    
+    N, C, H, W = x.shape
+    x = x.reshape(N*G, -1)
+    sample_mean = np.mean(x, axis=1, keepdims=True)
+    sample_var = np.var(x, axis=1, keepdims=True)
+    x_normed = (x - sample_mean)/np.sqrt(sample_var + eps)
+    x_normed = x_normed.reshape(N, C, H, W)
+    out = x_normed*gamma + beta
+
+    # cache
+
+    #xhat = x_normed 
+    #gamma = gamma
+    ivarsqrt = 1/np.sqrt(sample_var + eps)
+    ivarsqrt = ivarsqrt.reshape(1, N*G, 1, 1)
+    xmu = x - sample_mean
+    xmu = xmu.reshape(N, C, H, W)
+
+    varsqrt = np.sqrt(sample_var + eps)
+    varsqrt = varsqrt.reshape(1, N*G, 1, 1)
+    var = sample_var.reshape(1, N*G, 1, 1)
+    #eps = eps
+
+    cache = (x_normed, gamma, ivarsqrt, xmu, varsqrt, var, eps, G)
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -829,6 +859,15 @@ def spatial_groupnorm_backward(dout, cache):
     # This will be extremely similar to the layer norm implementation.        #
     ###########################################################################
     pass
+    N, C, H, W = dout.shape
+    xhat, gamma, ivarsqrt, xmu, varsqrt, var, eps, G = cache
+
+    dgammax = dout
+    dbeta = np.sum(dout, axis=(0, 2, 3), keepdims=True)
+    dgamma = np.sum(dgammax*xhat, axis=(0, 2, 3), keepdims=True)
+    
+    dx = 0
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
